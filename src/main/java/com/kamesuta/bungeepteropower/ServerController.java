@@ -30,6 +30,12 @@ public class ServerController {
         // Get signal
         String signal = signalType.getSignal();
 
+        //MemoryManager memoryManager = plugin.memory;
+
+         //memoryManager.getTotalMemory();
+
+        plugin.config.getServerNames();
+
         // Send power signal
         CompletableFuture<Void> future;
         PowerController powerController = plugin.config.getPowerController();

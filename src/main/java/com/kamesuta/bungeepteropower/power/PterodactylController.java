@@ -1,5 +1,7 @@
 package com.kamesuta.bungeepteropower.power;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.kamesuta.bungeepteropower.api.PowerController;
@@ -9,6 +11,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
@@ -104,6 +107,65 @@ public class PterodactylController implements PowerController {
      * @param backupUuid The UUID of the backup
      * @return A future that completes when the request is finished
      */
+
+    public CompletableFuture<Void> getTotalMemory(Set<String> servers) {
+        String signal = signalType.getSignal();
+        String doing = signalType == PowerSignal.START ? "Starting" : "Stopping";
+        logger.info(String.format("%s server: %s (Pterodactyl server ID: %s)", doing, serverName, serverId));
+
+        // Create a path
+        String path = "/api/client/servers/";
+
+        HttpClient client = HttpClient.newHttpClient();
+
+        // Create a JSON body to send power signal
+        String jsonBody = "{\"signal\": \"" + signal + "\"}";
+
+        // Create a request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(plugin.config.pterodactylUrl.resolve(path).toString()))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + plugin.config.pterodactylApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        // Execute request and register a callback
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(status -> {
+                    int code = status.statusCode();
+                    if (code == 200) {
+                        // Parse JSON (attributes.current_state)
+                        JsonObject root = JsonParser.parseString(status.body()).getAsJsonObject();
+                        JsonArray dataArray = root.getAsJsonArray("data");
+
+                        // Initialize the sum variable
+                        int memorySum = 0;
+
+                        // Iterate through the data array and sum the memory values
+                        for (JsonElement element : dataArray) {
+                            JsonObject dataObject = element.getAsJsonObject();
+                            JsonObject attributes = dataObject.getAsJsonObject("attributes");
+                            JsonObject limits = attributes.getAsJsonObject("limits");
+
+                            // Get the memory value and add it to the sum
+                            int memory = limits.get("memory").getAsInt();
+                            memorySum += memory;
+                        }
+                        return memorySum;
+                    } else {
+                        String message = "Failed to check total memory, Response: " + code + " code";
+                        logger.warning(message);
+                        logger.info("Request: " + request + ", Response: " + code + " " + status.body());
+                        throw new RuntimeException(message);
+                    }
+                })
+                .exceptionally(e -> {
+                    logger.log(Level.WARNING, "Failed to send " + signal + " signal to the server: " + serverName, e);
+                    throw new CompletionException(e);
+                });
+
+    }
+
     private CompletableFuture<Void> restoreBackup(String serverName, String serverId, String backupUuid) {
         logger.info(String.format("Restoring from backup: %s to server: %s (Pterodactyl server ID: %s)", backupUuid, serverName, serverId));
 

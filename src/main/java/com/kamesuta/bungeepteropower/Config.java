@@ -89,6 +89,10 @@ public class Config {
      */
     public final String pterodactylApiKey;
     /**
+     * Max memory before the severs won't start
+     */
+    public final int maxMemoryMB;
+    /**
      * Per-server configuration
      */
     private final Map<String, ServerConfig> serverMap;
@@ -142,6 +146,7 @@ public class Config {
             this.restorePingInterval = configuration.getInt("restoreOnStop.pingInterval", 5);
             this.powerControllerType = configuration.getString("powerControllerType");
             this.useSynchronousPing = configuration.getBoolean("useSynchronousPing", false);
+            this.maxMemoryMB = configuration.getInt("maxMemoryMB");
 
             // Startup join settings
             this.startupJoinTimeout = configuration.getInt("startupJoin.timeout");
@@ -151,6 +156,7 @@ public class Config {
             // Pterodactyl API credentials
             this.pterodactylUrl = new URI(configuration.getString("pterodactyl.url"));
             this.pterodactylApiKey = configuration.getString("pterodactyl.apiKey");
+
 
             // Bungeecord server name -> Pterodactyl server ID list
             serverMap = new HashMap<>();

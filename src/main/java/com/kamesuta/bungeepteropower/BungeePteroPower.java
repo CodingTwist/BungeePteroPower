@@ -38,6 +38,7 @@ public final class BungeePteroPower extends Plugin implements BungeePteroPowerAP
     /**
      * Delayed stop task manager
      */
+    public MemoryManager memory;
     public DelayManager delay;
     /**
      * Power controllers
@@ -87,6 +88,8 @@ public final class BungeePteroPower extends Plugin implements BungeePteroPowerAP
                 return null;
             });
         }
+
+        memory = new MemoryManager();
 
         // Create DelayManager
         delay = new DelayManager();
